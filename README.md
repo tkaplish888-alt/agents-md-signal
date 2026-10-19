@@ -70,7 +70,6 @@ It found the decision in the SageOx recording, restated the plan correctly, and 
 
 - **It wrote an AGENTS.md into this repo.** `ox init` added its own agent-context file, so a tool that studies AGENTS.md files now has one of its own. A fitting place to start.
 - **Talking was faster than writing.** The memo took two minutes; writing the same plan into a doc and pointing the agent at it would have taken longer, and I'd have skipped it.
-- **The transcript heard "Jev" as "Jeff."** Claude still connected it to `jev.py`, but uncommon tool names in voice notes are worth watching.
 - **`ox doctor` earned its keep.** It caught that `ox` wasn't on the PATH background hooks use, which would have quietly broken session capture.
 
 ## How it works end to end
