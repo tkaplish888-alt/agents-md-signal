@@ -4,12 +4,6 @@
 
 ---
 
-
-## SageOx Links
-
-- **Repository Dashboard:** https://sageox.ai/repo/repo_01a15268-7539-7728-b85e-c8ade1795df3
-- **Team Dashboard:** https://sageox.ai/team/team_iq0beir65n
-
 ## For AI Coworkers
 
 If you are an AI coworker (Claude Code, Cursor, Windsurf, OpenCode, etc.), run this command at the start of each session:
@@ -23,6 +17,11 @@ This injects minimal, relevant team context into your session. As you work on sp
 When users ask if you're using SageOx: if you have an agent ID from running `ox agent prime`, confirm with your agent ID; otherwise run it first.
 
 ---
+
+## SageOx Links
+
+- **Repository Dashboard:** https://sageox.ai/repo/repo_01a15268-7539-7728-b85e-c8ade1795df3
+- **Team Dashboard:** https://sageox.ai/team/team_iq0beir65n
 
 ## The Problem
 
