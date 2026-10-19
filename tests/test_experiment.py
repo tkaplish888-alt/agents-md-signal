@@ -76,6 +76,7 @@ def fake_jev_post(url, headers, body):
     answers = {
         "edit_type": {"type": "choice", "choice": "reversal" if friction else "new_rule", "confidence": 0.9},
         "contradicts_prior": {"type": "noul", "noul": 0.8 if friction else 0.1},
+        "knowledge_kind": {"type": "choice", "choice": "context" if friction else "rule", "confidence": 0.9},
     }
     return 200, json.dumps({"model": "jev-test", "answers": answers, "usage": {"input_tokens": 100}})
 
@@ -109,6 +110,12 @@ class ExperimentTest(unittest.TestCase):
         self.assertIn("Hypothesis test", report)
         self.assertIn("Verdict: supported", report)
         self.assertTrue(Path(self.tmp.name, "experiment.json").exists())
+        rc = exp["rules_vs_context"]
+        self.assertEqual(rc["edits"], 240)
+        self.assertAlmostEqual(rc["context_share"], 84 / 240, places=3)
+        self.assertEqual(rc["context_share_in_friction"], 1.0)
+        self.assertEqual(rc["context_share_in_non_friction"], 0.0)
+        self.assertIn("Rules vs. context", report)
 
     def test_publishes_to_sageox_context_repo(self):
         ctx = Path(self.tmp.name, "team-context")

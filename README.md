@@ -45,6 +45,12 @@ What the data *did* show: **Jev labeled about 3 in 10 edits as repairing, revers
 
 Jev's labels are the source of that 30%, and I haven't checked them myself yet. So the next step is validating them (below), then comparing against teams that don't use a context file at all.
 
+## Second question: rules vs. context
+
+Milkana Brace's post [How to Share Context Between Claude Code and Codex](https://sageox.ai/blog/share-context-between-claude-code-and-codex) splits a team's knowledge in two. **Rules** (conventions, guardrails, commands) belong in `AGENTS.md`. **Context** (what was decided and why, what was tried and abandoned, current status) doesn't; it belongs in a layer every agent can read and none owns.
+
+That turns the first run's leftover question into a sharper one: *how much of what teams actually put into `AGENTS.md` is context?* Each edit now gets a third Jev label, `rule`, `context` or `reference` (stable facts like architecture and setup), and the report shows the context share overall, by group, and inside friction edits versus the rest. If stale context is what gets repaired, it should be over-represented among friction edits.
+
 ### Validate Jev's labels by hand
 
 ```bash

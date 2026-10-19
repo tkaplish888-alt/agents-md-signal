@@ -32,11 +32,24 @@ EDIT_TYPES = {
 FRICTION_TYPES = {"reversal", "conflict_fix"}
 CONTRADICTS_THRESHOLD = 0.6
 
+# Milkana Brace's split ("How to Share Context Between Claude Code and Codex", SageOx blog,
+# Sep 2026): rules belong in AGENTS.md; context (decisions, history, what was tried) does not.
+KNOWLEDGE_KINDS = {
+    "rule": "A standing instruction or convention the agent should follow on every task: do's and don'ts, style, commands to run, guardrails",
+    "context": "Team knowledge that is not a standing rule: a decision and why it was made, project history, what was tried or abandoned, current status or in-progress notes, who owns or is working on what",
+    "reference": "Stable descriptive facts about the codebase: architecture, file layout, how components fit together, setup steps",
+}
+
 QUESTIONS = {
     "edit_type": {
         "type": "choice",
         "instructions": "What kind of change is this edit to an AI agent instructions file (AGENTS.md / CLAUDE.md)?",
         "criteria": EDIT_TYPES,
+    },
+    "knowledge_kind": {
+        "type": "choice",
+        "instructions": "What kind of knowledge does the content this edit adds or changes mostly carry?",
+        "criteria": KNOWLEDGE_KINDS,
     },
     "contradicts_prior": {
         "type": "noul",
@@ -55,6 +68,8 @@ class GroupStats:
     friction: int = 0
     per_repo_rates: list = field(default_factory=list)
     types: dict = field(default_factory=dict)
+    kinds: dict = field(default_factory=dict)
+    kinds_friction: dict = field(default_factory=dict)
     records: list = field(default_factory=list)  # one per classified edit, for hand validation
 
     @property
@@ -81,6 +96,8 @@ class GroupStats:
             "wilson_95": [round(lo, 4), round(hi, 4)],
             "median_repo_rate": round(median(self.per_repo_rates), 4) if self.per_repo_rates else None,
             "edit_types": self.types,
+            "knowledge_kinds": self.kinds,
+            "knowledge_kinds_friction": self.kinds_friction,
         }
 
 
@@ -127,11 +144,16 @@ def classify_repo(gh: GitHub, jev: Jev, res: Result, stats: GroupStats, edits_pe
             log(f"  jev failed on {res.repo}@{sha[:7]}: {e}")
             continue
         edit_type, fr = is_friction(answers)
+        kind = ((answers.get("knowledge_kind") or {}).get("choice")) or "unknown"
+        stats.kinds[kind] = stats.kinds.get(kind, 0) + 1
+        if fr:
+            stats.kinds_friction[kind] = stats.kinds_friction.get(kind, 0) + 1
         stats.records.append({
             "repo": res.repo, "sha": sha, "file": res.path, "commit_message": message, "diff": patch,
             "jev_edit_type": edit_type,
             "jev_contradicts": (answers.get("contradicts_prior") or {}).get("noul"),
             "jev_friction": fr,
+            "jev_knowledge_kind": kind,
         })
         stats.types[edit_type] = stats.types.get(edit_type, 0) + 1
         done += 1
@@ -157,6 +179,49 @@ def verdict(treat: GroupStats, control: GroupStats, min_edits: int = 50) -> tupl
     return ("inconclusive", f"No clear difference: ratio {ratio:.2f}, p={p:.3g}." if p is not None else "No clear difference.")
 
 
+def _wilson(k: int, n: int) -> list[float]:
+    lo, hi = GroupStats("x", edits=n, friction=k).wilson()
+    return [round(lo, 4), round(hi, 4)]
+
+
+def rules_vs_context(t: GroupStats, c: GroupStats) -> dict:
+    """How much AGENTS.md churn is context that, by SageOx's own argument, belongs outside the file?"""
+    kinds, kinds_fr = {}, {}
+    for g in (t, c):
+        for k, v in g.kinds.items():
+            kinds[k] = kinds.get(k, 0) + v
+        for k, v in g.kinds_friction.items():
+            kinds_fr[k] = kinds_fr.get(k, 0) + v
+    n = sum(kinds.values())
+    n_fr = sum(kinds_fr.values())
+    ctx, ctx_fr = kinds.get("context", 0), kinds_fr.get("context", 0)
+    ctx_nonfr, n_nonfr = ctx - ctx_fr, n - n_fr
+
+    def share(k, m):
+        return round(k / m, 4) if m else None
+
+    p = None
+    if n_fr and n_nonfr:
+        a = GroupStats("fr", edits=n_fr, friction=ctx_fr)
+        b = GroupStats("nonfr", edits=n_nonfr, friction=ctx_nonfr)
+        p = two_proportion_p(a, b)
+    return {
+        "question": "What share of edits to agent-context files add or change context (decisions, history, "
+                    "what was tried, status) rather than rules or reference, and is that content over-represented "
+                    "in friction edits?",
+        "edits": n,
+        "kinds": kinds,
+        "context_share": share(ctx, n),
+        "context_share_ci": _wilson(ctx, n) if n else None,
+        "context_share_team": share(t.kinds.get("context", 0), t.edits),
+        "context_share_solo": share(c.kinds.get("context", 0), c.edits),
+        "context_share_in_friction": share(ctx_fr, n_fr),
+        "context_share_in_non_friction": share(ctx_nonfr, n_nonfr),
+        "friction_vs_non_friction_p": round(p, 6) if p is not None else None,
+        "source": "Rules vs. context split from Milkana Brace, 'How to Share Context Between Claude Code and Codex' (SageOx, Sep 2026)",
+    }
+
+
 def run_experiment(gh: GitHub, jev: Jev, treatment: list[Result], control: list[Result],
                    edits_per_repo: int, log=print) -> dict:
     t, c = GroupStats("3+ editors"), GroupStats("1 editor (control)")
@@ -178,6 +243,7 @@ def run_experiment(gh: GitHub, jev: Jev, treatment: list[Result], control: list[
         "treatment": t.summary(),
         "control": c.summary(),
         "classifier": {"model": jev.model, "calls": jev.calls},
+        "rules_vs_context": rules_vs_context(t, c),
         "friction_definition": f"edit_type in {sorted(FRICTION_TYPES)} or contradicts_prior >= {CONTRADICTS_THRESHOLD}",
         # per-edit records; the caller writes these to their own file, not experiment.json
         "edits": [dict(r, group="team") for r in t.records] + [dict(r, group="solo") for r in c.records],

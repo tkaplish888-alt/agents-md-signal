@@ -51,6 +51,37 @@ def experiment_lines(exp: dict) -> list[str]:
     return lines
 
 
+def rules_context_lines(exp: dict) -> list[str]:
+    rc = exp.get("rules_vs_context")
+    if not rc or not rc.get("edits"):
+        return []
+
+    def pct(x):
+        return f"{x:.1%}" if x is not None else "–"
+
+    lo, hi = rc["context_share_ci"]
+    p = rc["friction_vs_non_friction_p"]
+    lines = [
+        "## Rules vs. context",
+        "",
+        "SageOx's argument is that AGENTS.md should hold **rules**, and that **context** (decisions, history, "
+        "what was tried, current status) belongs in a shared layer outside the file. This asks how much "
+        "real-world AGENTS.md churn is context anyway.",
+        "",
+        f"- **{pct(rc['context_share'])} of edits add or change context** (95% CI {pct(lo)}–{pct(hi)}, n={rc['edits']}); "
+        f"team files {pct(rc['context_share_team'])}, solo files {pct(rc['context_share_solo'])}.",
+        f"- Context is {pct(rc['context_share_in_friction'])} of friction edits vs. {pct(rc['context_share_in_non_friction'])} "
+        f"of other edits" + (f" (p={p:.3g})." if p is not None else "."),
+        "",
+        "| Kind | Edits |",
+        "|---|---|",
+    ]
+    for k, v in sorted(rc["kinds"].items(), key=lambda kv: -kv[1]):
+        lines.append(f"| {k} | {v} |")
+    lines += ["", f"Source of the split: {rc['source']}. Classified by Jev; not yet hand-validated.", ""]
+    return lines
+
+
 def write_outputs(results: list[Result], funnel: dict, params: dict, out_dir: str | Path,
                   experiment: dict | None = None) -> dict:
     out = Path(out_dir)
@@ -76,6 +107,7 @@ def write_outputs(results: list[Result], funnel: dict, params: dict, out_dir: st
         f"Run: {now} · files: {', '.join(params.get('filenames', []))} · window: {params.get('since_days')} days",
         "",
         *(experiment_lines(experiment) if experiment else []),
+        *(rules_context_lines(experiment) if experiment else []),
         "## Funnel",
         "",
         "| Stage | Count |",
