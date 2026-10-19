@@ -56,6 +56,23 @@ python3 -m agentsignal validate score      # agreement and kappa vs Jev, on fric
 
 The sheet hides Jev's answers so they can't anchor you. The score reports friction agreement (what drives the headline rate) with a 95% interval, Cohen's kappa, both friction rates side by side, and where the edit types disagree. Kappa of 0.6+ means the ~30% is real enough to act on; below 0.4, fix the classification first.
 
+## Built with SageOx
+
+This project's own decisions live in [SageOx](https://sageox.ai). After the first run killed my hypothesis, I recorded a two-minute voice memo on my phone about what I'd found and what I wanted to do next: hand-check Jev's labels on 50 edits before trusting the 30%.
+
+Then I opened a fresh Claude Code session and asked one question, with no other context: *"What did I decide about the next step for this project? Then build it."*
+
+![Claude Code recalling the decision from a SageOx recording](docs/sageox-recall.png)
+
+It found the decision in the SageOx recording, restated the plan correctly, and built it: `python3 -m agentsignal validate sample` writes a blind labeling sheet (25 team edits, 25 solo, Jev's answers hidden so they can't anchor me), and `validate score` reports agreement and Cohen's kappa against Jev. Full session: [docs/sageox-demo.mp4](docs/sageox-demo.mp4) (2.5 min).
+
+### Notes from using SageOx
+
+- **It wrote an AGENTS.md into this repo.** `ox init` added its own agent-context file, so a tool that studies AGENTS.md files now has one of its own. A fitting place to start.
+- **Talking was faster than writing.** The memo took two minutes; writing the same plan into a doc and pointing the agent at it would have taken longer, and I'd have skipped it.
+- **The transcript heard "Jev" as "Jeff."** Claude still connected it to `jev.py`, but uncommon tool names in voice notes are worth watching.
+- **`ox doctor` earned its keep.** It caught that `ox` wasn't on the PATH background hooks use, which would have quietly broken session capture.
+
 ## How it works end to end
 
 1. **Discover.** Searches GitHub code for `AGENTS.md` and `CLAUDE.md`, sliced into size ranges to see past GitHub's 1,000-results-per-query cap.
