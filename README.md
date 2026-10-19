@@ -33,6 +33,18 @@ If that's true, co-editing is a pain signal, and the target list is worth acting
 - Friction per edit controls for multi-author files simply having more edits, but not for every confounder (team size, project age).
 - A classifier label is evidence, not proof. The real test is asking the teams, which is what the outreach openers are for.
 
+## First run (October 2026)
+
+- **2,085** organization-owned repos with a large `AGENTS.md` or `CLAUDE.md`; the 200 largest analyzed.
+- **60** have 2+ human editors; **16** were edited by 3+ people in the last 90 days.
+- **919 human edits** classified by Jev (339 from 3+ editor files, 580 from single-author controls).
+
+**Verdict: inconclusive. The hypothesis as stated didn't hold.** Friction edits were 30.7% of edits in co-edited files (95% CI 26.0–35.8%) and 29.3% in single-author files (25.8–33.1%); p = 0.66.
+
+What the data *did* show is more interesting: **about 3 in 10 edits to an agent-context file repair, reverse or contradict earlier instructions, whether one person or a whole team maintains it.** Keeping agents' context current looks like a tax everyone pays, not a symptom of team size. That points outreach at anyone maintaining these files actively, and makes co-editing a measure of how many people pay the tax rather than whether it exists.
+
+Next tests: validate Jev's labels against a hand-labeled sample, and compare against teams that don't use a context file at all.
+
 ## How it works end to end
 
 1. **Discover.** Searches GitHub code for `AGENTS.md` and `CLAUDE.md`, sliced into size ranges to see past GitHub's 1,000-results-per-query cap.
