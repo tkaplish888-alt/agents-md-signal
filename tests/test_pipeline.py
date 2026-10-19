@@ -93,7 +93,9 @@ def fake_claude(url, headers, body):
     text = json.dumps({"segment": "product_company", "what_they_build": "Payments platform",
                        "context_signal": "Shared rule that agents run tests before PRs",
                        "opener_hook": "Saw your AGENTS.md makes every agent run make test before a PR."})
-    return 200, json.dumps({"content": [{"type": "text", "text": text}]})
+    assert req["tool_choice"]["name"] == "record_prospect"
+    return 200, json.dumps({"stop_reason": "tool_use",
+                            "content": [{"type": "tool_use", "name": "record_prospect", "input": json.loads(text)}]})
 
 
 class PipelineTest(unittest.TestCase):
@@ -151,6 +153,15 @@ class PipelineTest(unittest.TestCase):
         score(big_solo, 90)
         score(small_team, 90)
         self.assertGreater(small_team.score, big_solo.score)
+
+
+class EnrichParseTest(unittest.TestCase):
+    def test_text_fallback_and_clear_error(self):
+        from agentsignal.enrich import _parse_response
+        self.assertEqual(_parse_response(json.dumps({"content": [{"type": "text", "text": 'x {"segment": "other"} y'}]})),
+                         {"segment": "other"})
+        with self.assertRaisesRegex(ValueError, "stop_reason=max_tokens"):
+            _parse_response(json.dumps({"stop_reason": "max_tokens", "content": [{"type": "thinking"}]}))
 
 
 class RateLimitTest(unittest.TestCase):

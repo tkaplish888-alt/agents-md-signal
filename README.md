@@ -95,7 +95,7 @@ The tool reports at the **organization** level only. It counts distinct editors 
 python3 -m unittest discover -s tests -t .
 ```
 
-Twelve offline tests run the whole pipeline against a fake GitHub, Jev and Claude: bot filtering, rate-limit retries, caching, the scoring rule that a small team-edited file outranks a huge solo one, the hypothesis test (including each verdict), and the commit into a SageOx context repo.
+Thirteen offline tests run the whole pipeline against a fake GitHub, Jev and Claude: bot filtering, rate-limit retries, caching, the scoring rule that a small team-edited file outranks a huge solo one, the hypothesis test (including each verdict), and the commit into a SageOx context repo.
 
 ## Why I built this
 
