@@ -51,6 +51,20 @@ Milkana Brace's post [How to Share Context Between Claude Code and Codex](https:
 
 That turns the first run's leftover question into a sharper one: *how much of what teams actually put into `AGENTS.md` is context?* Each edit now gets a third Jev label, `rule`, `context` or `reference` (stable facts like architecture and setup), and the report shows the context share overall, by group, and inside friction edits versus the rest. If stale context is what gets repaired, it should be over-represented among friction edits.
 
+**Result (same 919 edits, 63 repos):**
+
+| | Context share of edits |
+|---|---|
+| All edits | **19.5%** (95% CI 17.1–22.2%) |
+| Files edited by 3+ people | **10.9%** (37 of 339) |
+| Files kept by one person | **24.5%** (142 of 580) |
+
+Most edits were `reference` (48%) or `rule` (33%). Context was not over-represented among friction edits (20.7% vs. 19.0%, p = 0.56), so stale context isn't what gets repaired most.
+
+The split by group is the surprise. Single-author files carry more than twice as much context as team files (p < 0.001 per edit), and it holds per repo: the median team file had **no** context edits, the median solo file 13%, and 13 of 39 solo repos were 30%+ context against 3 of 24 team repos.
+
+One reading: a solo builder uses `AGENTS.md` as a notebook, while teams keep the file to rules and their decisions live somewhere else, or nowhere. That would put the team context SageOx is built for outside any file this tool can see. It's a reading, not a finding; the labels are Jev's and not yet hand-checked.
+
 ### Validate Jev's labels by hand
 
 ```bash
