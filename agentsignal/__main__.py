@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 
@@ -96,6 +97,10 @@ def run(args, gh: GitHub, api_key: str | None, post=None, jev: Jev | None = None
         log("4/6 Skipping Claude enrichment (no ANTHROPIC_API_KEY or --enrich-top 0)")
 
     log("5/6 Writing outputs…")
+    if experiment:  # per-edit records feed `validate sample`; kept out of experiment.json and the report
+        os.makedirs(args.out, exist_ok=True)
+        with open(os.path.join(args.out, "edits.json"), "w") as f:
+            json.dump(experiment.pop("edits", []), f, indent=1)
     params = {k: v for k, v in vars(args).items() if k not in ("cache", "sageox_context")}
     info = write_outputs(results, funnel, params, args.out, experiment=experiment)
 
@@ -116,6 +121,10 @@ def run(args, gh: GitHub, api_key: str | None, post=None, jev: Jev | None = None
 
 
 def main(argv=None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "validate":
+        from .validate import main as validate_main
+        return validate_main(argv[1:])
     args = build_parser().parse_args(argv)
     token = resolve_token()
     if not token:

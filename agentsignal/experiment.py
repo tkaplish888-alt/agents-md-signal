@@ -55,6 +55,7 @@ class GroupStats:
     friction: int = 0
     per_repo_rates: list = field(default_factory=list)
     types: dict = field(default_factory=dict)
+    records: list = field(default_factory=list)  # one per classified edit, for hand validation
 
     @property
     def rate(self) -> float:
@@ -126,6 +127,12 @@ def classify_repo(gh: GitHub, jev: Jev, res: Result, stats: GroupStats, edits_pe
             log(f"  jev failed on {res.repo}@{sha[:7]}: {e}")
             continue
         edit_type, fr = is_friction(answers)
+        stats.records.append({
+            "repo": res.repo, "sha": sha, "file": res.path, "commit_message": message, "diff": patch,
+            "jev_edit_type": edit_type,
+            "jev_contradicts": (answers.get("contradicts_prior") or {}).get("noul"),
+            "jev_friction": fr,
+        })
         stats.types[edit_type] = stats.types.get(edit_type, 0) + 1
         done += 1
         friction += fr
@@ -172,4 +179,6 @@ def run_experiment(gh: GitHub, jev: Jev, treatment: list[Result], control: list[
         "control": c.summary(),
         "classifier": {"model": jev.model, "calls": jev.calls},
         "friction_definition": f"edit_type in {sorted(FRICTION_TYPES)} or contradicts_prior >= {CONTRADICTS_THRESHOLD}",
+        # per-edit records; the caller writes these to their own file, not experiment.json
+        "edits": [dict(r, group="team") for r in t.records] + [dict(r, group="solo") for r in c.records],
     }

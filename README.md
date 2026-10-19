@@ -43,7 +43,18 @@ If that's true, co-editing is a pain signal, and the target list is worth acting
 
 What the data *did* show is more interesting: **about 3 in 10 edits to an agent-context file repair, reverse or contradict earlier instructions, whether one person or a whole team maintains it.** Keeping agents' context current looks like a tax everyone pays, not a symptom of team size. That points outreach at anyone maintaining these files actively, and makes co-editing a measure of how many people pay the tax rather than whether it exists.
 
-Next tests: validate Jev's labels against a hand-labeled sample, and compare against teams that don't use a context file at all.
+Jev's labels are the source of that 30%, and I haven't checked them myself yet. So the next step is validating them (below), then comparing against teams that don't use a context file at all.
+
+### Validate Jev's labels by hand
+
+```bash
+python3 -m agentsignal ...                 # a full run now also writes out/edits.json (per-edit Jev labels)
+python3 -m agentsignal validate sample     # 50 random edits, 25 team + 25 solo -> out/label_sheet.csv
+# fill my_edit_type (same six categories Jev uses) and my_contradicts (y/n) for every row
+python3 -m agentsignal validate score      # agreement and kappa vs Jev, on friction and on edit type
+```
+
+The sheet hides Jev's answers so they can't anchor you. The score reports friction agreement (what drives the headline rate) with a 95% interval, Cohen's kappa, both friction rates side by side, and where the edit types disagree. Kappa of 0.6+ means the ~30% is real enough to act on; below 0.4, fix the classification first.
 
 ## How it works end to end
 
