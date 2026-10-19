@@ -1,20 +1,47 @@
 # AGENTS.md Signal
 
-Find the teams that are hand-maintaining shared context for their AI agents.
+Find the teams that are hand-maintaining shared context for their AI agents, and test whether that's actually a pain point.
 
 `AGENTS.md` and `CLAUDE.md` have become the standard place where engineering teams tell their coding agents how the codebase works: conventions, commands, rules, who owns what. A large file on its own doesn't mean much. Tools generate them in seconds.
 
-What *does* mean something is when **several different people keep editing the same file**. That's a team negotiating shared context by hand, every week, in a markdown file. It's exactly the problem that team-wide context layers like [SageOx](https://sageox.ai) exist to solve, which makes it one of the clearest public buying signals for that category.
+What *might* mean something is when **several different people keep editing the same file**. That looks like a team negotiating shared context by hand, in a markdown file. It's the problem team-wide context layers like [SageOx](https://sageox.ai) exist to solve.
 
-This tool finds those teams.
+"Might" is doing real work in that sentence, so this tool does two jobs:
 
-## How it works
+1. **Find** the teams co-editing agent-context files, ranked and qualified.
+2. **Test** whether co-editing is really a pain signal, instead of assuming it.
 
-1. **Discover.** Searches GitHub code for `AGENTS.md` and `CLAUDE.md`, sliced into size ranges so it can see past GitHub's 1,000-results-per-query cap.
-2. **Filter.** Keeps repos owned by organizations, skips forks, archived repos and personal projects, and picks the root-most context file in each repo.
-3. **Measure co-editing.** Reads each file's commit history and counts distinct human authors, overall and in the last 90 days. Bot commits (Dependabot, Renovate, GitHub Actions) and agent-authored commits are excluded.
-4. **Score.** 0 to 100, weighted heavily toward multiple people editing recently, then maintenance activity, file depth and recency. Collapses to one row per organization.
-5. **Qualify with Claude (optional).** For the strongest targets, reads the file and org metadata and returns a segment (product company, devtools, open source, agency…), what the org builds, what in the file shows team coordination, and a specific opening line for outreach.
+## The hypothesis
+
+> Files co-edited by 3+ people have a higher share of **friction edits** (reversing, contradicting or repairing earlier instructions) than files maintained by one person.
+
+If that's true, co-editing is a pain signal, and the target list is worth acting on. If it isn't, co-editing is just normal upkeep, and outreach should lead with something else. A null result is still a result.
+
+### How it's tested
+
+1. Build two groups from the same search: a **treatment** group of files with 3+ human editors, and a **control** group of files with exactly one.
+2. Pull each file's recent human edits (the diff plus the commit message).
+3. Classify every edit with **[Jev](https://docs.typesafe.ai/introduction)**, TypeSafe's non-generative classifier. Jev doesn't write text; it returns calibrated answers to fixed questions, so it's fast, cheap and consistent across thousands of edits. Each edit gets:
+   - an **edit type**: new rule, clarification, reversal, conflict fix, restructure, or cleanup
+   - a **probability that it contradicts earlier guidance**
+4. An edit counts as friction if it's a reversal or conflict fix, or if its contradiction probability is 0.6 or higher.
+5. Compare friction rates between groups with **Wilson 95% intervals** and a **two-proportion z-test**. The verdict is one of: *supported*, *contradicted*, *inconclusive*, or *insufficient data*.
+
+### Known limits
+
+- Public repos skew toward open source, and open-source teams aren't necessarily buyers. The Claude step tags each org's segment so you can filter.
+- Friction per edit controls for multi-author files simply having more edits, but not for every confounder (team size, project age).
+- A classifier label is evidence, not proof. The real test is asking the teams, which is what the outreach openers are for.
+
+## How it works end to end
+
+1. **Discover.** Searches GitHub code for `AGENTS.md` and `CLAUDE.md`, sliced into size ranges to see past GitHub's 1,000-results-per-query cap.
+2. **Filter.** Keeps org-owned repos, skips forks and archived repos, and picks the root-most context file in each.
+3. **Measure co-editing.** Counts distinct human authors of each file, overall and in the last 90 days. Bot commits (Dependabot, Renovate, GitHub Actions) and agent-authored commits are excluded.
+4. **Test the hypothesis** with Jev, as above.
+5. **Score and rank** organizations, 0 to 100, weighted toward recent co-editing.
+6. **Qualify with Claude.** For the strongest targets, Claude reads the file and org metadata and returns a segment, what the org builds, what in the file shows team coordination, and a specific opening line for outreach.
+7. **Publish to SageOx.** Findings are written into your SageOx Team Context (a git repo SageOx syncs), so every agent session primed with `ox agent prime` starts out knowing what the research found. That's what you want when an agent later drafts outreach.
 
 | Tier | Meaning |
 |---|---|
@@ -24,33 +51,39 @@ This tool finds those teams.
 
 ### A note on prompt injection
 
-`AGENTS.md` files are, by definition, instructions written for AI agents. Feeding them straight into a model is asking for trouble, so the excerpt is passed as quoted data inside tags, and the model is told never to follow anything inside it.
+`AGENTS.md` files are, by definition, instructions written for AI agents. Feeding them straight into a model is asking for trouble. Claude receives the excerpt as quoted data and is told never to follow it, and Jev is non-generative, so there's nothing for a file to talk it into.
 
 ## Run it
 
 Python 3.10+, standard library only. No installs.
 
 ```bash
-gh auth login                          # code search requires a GitHub token
-export ANTHROPIC_API_KEY=sk-ant-...    # optional, enables the Claude step
+export GITHUB_TOKEN=...          # classic token, no scopes needed (code search requires auth)
+export TYPESAFE_API_KEY=...      # enables the Jev hypothesis test   (console.typesafe.ai/keys)
+export ANTHROPIC_API_KEY=...     # enables Claude qualification
+export SAGEOX_CONTEXT_DIR=...    # optional: path to your SageOx Team Context repo
 
-python3 -m agentsignal                 # defaults: AGENTS.md + CLAUDE.md, files ≥ 4 KB, 90-day window
+python3 -m agentsignal --max-repos 200 --enrich-top 25
 ```
+
+Each key is optional except GitHub's; steps without a key are skipped and the rest still runs.
 
 Useful options:
 
 ```bash
-python3 -m agentsignal --max-repos 200 --enrich-top 25   # quicker first pass
-python3 -m agentsignal --filenames AGENTS.md --min-size 8000
-python3 -m agentsignal --since-days 30 --min-authors 3
+--experiment-repos 40     # repos per group in the Jev test (0 = off)
+--edits-per-repo 15       # most recent human edits classified per repo
+--sageox-push             # also push the SageOx context repo after committing
+--filenames AGENTS.md --min-size 8000 --since-days 30 --min-authors 3
 ```
 
 Outputs land in `out/`:
 
-- `report.md`: funnel, tiers and the top 25 organizations
+- `report.md`: hypothesis verdict, funnel, tiers and the top 25 organizations
+- `experiment.json`: full test results, including edit-type breakdowns
 - `targets.csv` / `targets.json`: the full ranked list
 
-A full default run takes roughly 30 to 60 minutes, mostly waiting on GitHub's code-search limit (about 10 searches a minute). Every response is cached in `.cache/`, so re-runs and tweaks to scoring are fast.
+Every GitHub response is cached in `.cache/`, so re-runs and changes to scoring are fast. If Python can't verify HTTPS certificates on a Mac, run `open "/Applications/Python 3.x/Install Certificates.command"` once.
 
 ## Privacy
 
@@ -59,14 +92,14 @@ The tool reports at the **organization** level only. It counts distinct editors 
 ## Tests
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -t .
 ```
 
-The suite runs the whole pipeline offline against a fake GitHub and a fake Claude, including bot filtering, rate-limit retries, caching and the scoring rule that a small file edited by a team outranks a huge file edited by one person.
+Twelve offline tests run the whole pipeline against a fake GitHub, Jev and Claude: bot filtering, rate-limit retries, caching, the scoring rule that a small team-edited file outranks a huge solo one, the hypothesis test (including each verdict), and the commit into a SageOx context repo.
 
 ## Why I built this
 
-I've spent the last year building GTM systems on top of Claude Code and MCP, and the moment that keeps repeating is opening a fresh session and re-explaining decisions the team already made. Watching how teams cope with that in public (by growing a shared markdown file and taking turns editing it) felt like the most honest signal of who's ready for a better answer. This is v1 of turning that observation into an outbound list.
+I've spent the last year building GTM systems on top of Claude Code and MCP, and the moment that keeps repeating is opening a fresh session and re-explaining decisions the team already made. Watching how teams cope with that in public, by growing a shared markdown file and taking turns editing it, felt like an honest signal of who's ready for a better answer. But a signal you assume is just a vibe, so v2 tests it.
 
 ## License
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import ssl
 import subprocess
 import sys
 import time
@@ -24,10 +25,44 @@ API = "https://api.github.com"
 Fetch = Callable[[str, dict], tuple[int, dict, str]]
 
 
+SSL_HINT = (
+    "Python couldn't verify HTTPS certificates. On a Mac with python.org Python, run "
+    '`open "/Applications/Python 3.x/Install Certificates.command"` (match your version), '
+    "or `pip install certifi`."
+)
+
+
+def ssl_context() -> ssl.SSLContext:
+    """Use certifi's CA bundle when available (fixes python.org installs on macOS)."""
+    try:
+        import certifi  # type: ignore
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
+_SSL = None
+
+
+def open_url(req: urllib.request.Request, timeout: int):
+    global _SSL
+    if _SSL is None:
+        _SSL = ssl_context()
+    try:
+        return urllib.request.urlopen(req, timeout=timeout, context=_SSL)
+    except urllib.error.URLError as e:
+        if isinstance(e, urllib.error.HTTPError):
+            raise
+        if "CERTIFICATE_VERIFY_FAILED" in str(e.reason):
+            raise RuntimeError(SSL_HINT) from None
+        raise
+
+
 def _urllib_fetch(url: str, headers: dict) -> tuple[int, dict, str]:
     req = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with open_url(req, timeout=30) as resp:
             return resp.status, dict(resp.headers), resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         return e.code, dict(e.headers or {}), e.read().decode("utf-8", "replace")

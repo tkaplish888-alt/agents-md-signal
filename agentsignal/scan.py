@@ -75,10 +75,16 @@ class Result:
     opener_hook: str = ""
     fit_score: float = 0.0
     excerpt: str = ""
+    # filled by the experiment
+    edits_classified: int = 0
+    friction_edits: int = 0
+    friction_rate: float | None = None
+    human_shas: list = field(default_factory=list)
 
     def row(self) -> dict:
         d = asdict(self)
         d.pop("excerpt", None)
+        d.pop("human_shas", None)
         return d
 
 
@@ -168,6 +174,7 @@ def analyze(gh: GitHub, cand: Candidate, since_days: int, now: datetime | None =
         return None
 
     all_ids, recent_ids = set(), set()
+    human_shas: list[str] = []
     recent_commits = 0
     last_edit = None
     for c in commits:
@@ -177,6 +184,8 @@ def analyze(gh: GitHub, cand: Candidate, since_days: int, now: datetime | None =
         ident = _identity(c)
         if ident:
             all_ids.add(ident)
+            if c.get("sha"):
+                human_shas.append(c["sha"])
         if ts and ts >= cutoff:
             recent_commits += 1
             if ident:
@@ -203,6 +212,7 @@ def analyze(gh: GitHub, cand: Candidate, since_days: int, now: datetime | None =
         org_website=org.get("blog") or meta.get("homepage") or "",
         org_location=org.get("location") or "",
         org_description=org.get("description") or "",
+        human_shas=human_shas,
     )
 
 

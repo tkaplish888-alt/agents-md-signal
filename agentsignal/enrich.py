@@ -13,6 +13,7 @@ import urllib.error
 import urllib.request
 from typing import Callable
 
+from .github import open_url
 from .scan import Result
 
 API_URL = "https://api.anthropic.com/v1/messages"
@@ -52,7 +53,7 @@ Post = Callable[[str, dict, bytes], tuple[int, str]]
 def _urllib_post(url: str, headers: dict, body: bytes) -> tuple[int, str]:
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with open_url(req, timeout=60) as resp:
             return resp.status, resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8", "replace")
