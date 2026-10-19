@@ -41,7 +41,7 @@ If that's true, co-editing is a pain signal, and the target list is worth acting
 
 **Verdict: inconclusive. The hypothesis as stated didn't hold.** Friction edits were 30.7% of edits in co-edited files (95% CI 26.0–35.8%) and 29.3% in single-author files (25.8–33.1%); p = 0.66.
 
-What the data *did* show is more interesting: **about 3 in 10 edits to an agent-context file repair, reverse or contradict earlier instructions, whether one person or a whole team maintains it.** Keeping agents' context current looks like a tax everyone pays, not a symptom of team size. That points outreach at anyone maintaining these files actively, and makes co-editing a measure of how many people pay the tax rather than whether it exists.
+What the data *did* show: **Jev labeled about 3 in 10 edits as repairing, reversing or contradicting earlier instructions, in both groups.** That's a measurement of edits, not of pain. Whether teams actually feel it as a cost is a question only asking them can answer.
 
 Jev's labels are the source of that 30%, and I haven't checked them myself yet. So the next step is validating them (below), then comparing against teams that don't use a context file at all.
 
@@ -58,7 +58,7 @@ The sheet hides Jev's answers so they can't anchor you. The score reports fricti
 
 ## Built with SageOx
 
-This project's own decisions live in [SageOx](https://sageox.ai). After the first run killed my hypothesis, I recorded a two-minute voice memo on my phone about what I'd found and what I wanted to do next: hand-check Jev's labels on 50 edits before trusting the 30%.
+This project's own decisions live in [SageOx](https://sageox.ai). After the first run killed my hypothesis, I recorded a two-minute voice memo in SageOx about what I'd found and what I wanted to do next: hand-check Jev's labels on 50 edits before trusting the 30%.
 
 Then I opened a fresh Claude Code session and asked one question, with no other context: *"What did I decide about the next step for this project? Then build it."*
 
@@ -134,7 +134,7 @@ The tool reports at the **organization** level only. It counts distinct editors 
 python3 -m unittest discover -s tests -t .
 ```
 
-Thirteen offline tests run the whole pipeline against a fake GitHub, Jev and Claude: bot filtering, rate-limit retries, caching, the scoring rule that a small team-edited file outranks a huge solo one, the hypothesis test (including each verdict), and the commit into a SageOx context repo.
+26 offline tests run the whole pipeline against a fake GitHub, Jev and Claude: bot filtering, rate-limit retries, caching, the scoring rule that a small team-edited file outranks a huge solo one, the hypothesis test (including each verdict), the hand-validation sampler and scorer, and the commit into a SageOx context repo.
 
 ## Why I built this
 
