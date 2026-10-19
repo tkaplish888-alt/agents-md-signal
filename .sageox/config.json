@@ -1,0 +1,11 @@
+{
+  "config_version": "2",
+  "repo_id": "repo_01a15268-7539-7728-b85e-c8ade1795df3",
+  "repo_remote_hashes": [
+    "sha256:a739c35e5d0a9effb2018ce12169b2020efb4bfe2ab442b1a0be10f6e6ef6e5d"
+  ],
+  "team_id": "team_iq0beir65n",
+  "team_name": "Tonishqa's Private Team",
+  "endpoint": "https://sageox.ai",
+  "update_frequency_hours": 24
+}

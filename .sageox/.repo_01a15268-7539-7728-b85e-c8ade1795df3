@@ -1,0 +1,29 @@
+{
+  "repo_id": "repo_01a15268-7539-7728-b85e-c8ade1795df3",
+  "type": "git",
+  "init_at": "2026-10-19T04:25:39Z",
+  "init_by_email": "tkaplish888@gmail.com",
+  "init_by_name": "Tonishqa Kaplish",
+  "repo_salt": "edb1c31a1f622a04c7317e852ed4c2369cd62b10",
+  "endpoint": "https://sageox.ai",
+  "fingerprint": {
+    "first_commit": "edb1c31a1f622a04c7317e852ed4c2369cd62b10",
+    "monthly_checkpoints": {
+      "2026-10": "edb1c31a1f622a04c7317e852ed4c2369cd62b10"
+    },
+    "ancestry_samples": [
+      "edb1c31a1f622a04c7317e852ed4c2369cd62b10",
+      "d8a6499791789f4ddcf0862046aaced1d3ab6291",
+      "1dcdbd9a252142529702a3ea5811a661228ffecf"
+    ],
+    "remote_hashes": [
+      "sha256:a739c35e5d0a9effb2018ce12169b2020efb4bfe2ab442b1a0be10f6e6ef6e5d"
+    ]
+  },
+  "team_urls": {
+    "Tonishqa's Private Team": "https://git.sageox.ai/sageox-team_iq0beir65n/team-context.git"
+  },
+  "urls_cached_at": "2026-10-19T04:25:54Z",
+  "version": "0.23.0",
+  "updated_at": "2026-10-19T04:25:54Z"
+}
